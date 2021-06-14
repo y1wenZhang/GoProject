@@ -3,7 +3,7 @@ package main
 import "fmt"
 
 func main() {
-	// 定义一个channel
+	// 定义一个channel, 无缓冲channel
 	c := make(chan int)
 
 	go func(a, b int) {
