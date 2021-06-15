@@ -66,11 +66,12 @@ func (s *Server) Handler(conn net.Conn) {
 
 	// 接收用户消息，进行广播
 	go func() {
+		buf := make([]byte, 4096)
 		for {
-			buf := make([]byte, 4096)
 			n, err := conn.Read(buf)
 			if n == 0 {
 				s.BroadCast(user, "下线了")
+				return
 			}
 
 			if err != nil && err != io.EOF {
