@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"net"
+	"strings"
 )
 
 type User struct {
@@ -51,9 +52,26 @@ func (u *User) SendMsg(msg string) {
 func (u *User) DoMessage(msg string) {
 
 	if msg == "who" {
+		// 查询当前在线用户
 		for _,user := range u.server.OnlineMap {
 			msg := fmt.Sprintf("%s==%s在线\n", user.Addr, user.Name)
 			u.SendMsg(msg)
+		}
+	} else if len(msg) > 7 && msg[:7] == "rename|" {
+		// 用户重命名
+		newName := strings.Split(msg, "|")[1]
+		_, ok := u.server.OnlineMap[newName]
+		if ok {
+			u.SendMsg("用户名已存在\n")
+		} else {
+			u.server.mapLock.Lock()
+			delete(u.server.OnlineMap, u.Name)
+			u.server.OnlineMap[newName] = u
+			u.server.mapLock.Unlock()
+
+			u.Name = newName
+
+			u.SendMsg("用户名修改成功\n")
 		}
 	} else {
 		u.server.BroadCast(u, msg)
