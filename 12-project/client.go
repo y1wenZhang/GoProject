@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"net"
-	"os"
 )
 
 type Client struct {
@@ -36,6 +35,28 @@ func (client *Client) Menu() bool {
 }
 
 
+func (client *Client) PublicChat() {
+	var msg string
+	fmt.Println(">>>>>>>请输入聊天内容，exit退出：")
+	fmt.Scanln(&msg)
+
+	for msg != "exit" {
+		if len(msg) != 0 {
+			sendMsg := msg + "\n"
+			_, err := client.Conn.Write([]byte(sendMsg))
+			if err != nil {
+				fmt.Println("client conn write error:", err)
+				break
+			}
+		}
+
+		msg = ""
+		fmt.Println(">>>>>>>请输入聊天内容，exit退出：")
+		fmt.Scanln(&msg)
+	}
+}
+
+
 func (client *Client) UpdateName() bool {
 	fmt.Println(">>>>>>>请输入用户名：")
 	fmt.Scanln(&client.Name)
@@ -53,19 +74,19 @@ func (client *Client) UpdateName() bool {
 
 func (client *Client) DealResponse() {
 	for {
-		//buf := make([]byte, 4096)
-		//n, err := client.Conn.Read(buf)
-		//if n == 0 {
-		//	return
-		//}
-		//if err != nil && err != io.EOF {
-		//	fmt.Println("Conn Read err: ", err)
-		//	return
-		//}
-		//
-		//msg := string(buf[:n-1])
-		//fmt.Println(msg)
-		io.Copy(os.Stdout, client.Conn)
+		buf := make([]byte, 4096)
+		n, err := client.Conn.Read(buf)
+		if n == 0 {
+			return
+		}
+		if err != nil && err != io.EOF {
+			fmt.Println("Conn Read err: ", err)
+			return
+		}
+
+		msg := string(buf[:n-1])
+		fmt.Println(msg)
+		//io.Copy(os.Stdout, client.Conn)
 	}
 }
 
@@ -76,7 +97,7 @@ func (client *Client) Run() {
 		}
 		switch client.Param {
 		case 1:
-			fmt.Println(">>>>>>>>公聊模式选择中<<<<<<")
+			client.PublicChat()
 		case 2:
 			fmt.Println(">>>>>>>>私聊模式<<<<<<")
 		case 3:
