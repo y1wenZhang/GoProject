@@ -78,6 +78,17 @@ func (u *User) DoMessage(msg string) {
 
 			u.SendMsg("用户名修改成功, 用户名修改为：" + newName + "\n")
 		}
+	} else if len(msg) > 3 && msg[:3] == "to|" {
+		toName := strings.Split(msg, "|")[1]
+		message := strings.Split(msg, "|")[2]
+		_, ok := u.server.OnlineMap[toName]
+		if !ok {
+			u.SendMsg("用户不存在，请输入who,查询在线用户\n")
+		} else {
+			u.SendMsg("发送成功\n")
+			toUser := u.server.OnlineMap[toName]
+			toUser.SendMsg(fmt.Sprintf("%s对你说:%s\n", u.Name, message))
+		}
 	} else {
 		u.server.BroadCast(u, msg)
 	}
