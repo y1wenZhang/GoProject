@@ -11,6 +11,44 @@ type Client struct {
 	ServerPort int
 	Name string
 	Conn net.Conn
+	Param int
+}
+
+
+func (client *Client) Menu() bool {
+	var param int
+	fmt.Println("1. 公聊模式")
+	fmt.Println("2. 私聊模式")
+	fmt.Println("3. 更新用户名")
+	fmt.Println("0. 退出")
+
+	fmt.Scanln(&param)
+
+	if param >= 0 && param <=3 {
+		client.Param = param
+		return true
+	} else {
+		fmt.Println(">>>>>>>>请输入有效的数字<<<<<<<")
+		return false
+	}
+}
+
+
+func (client *Client) Run() {
+	for client.Param != 0 {
+		for client.Menu() != true {
+		}
+		switch client.Param {
+		case 1:
+			fmt.Println(">>>>>>>>公聊模式选择中<<<<<<")
+		case 2:
+			fmt.Println(">>>>>>>>私聊模式<<<<<<")
+		case 3:
+			fmt.Println(">>>>>>>>更改用户名<<<<<<")
+		case 0:
+			fmt.Println(">>>>>>>>退出<<<<<<<<<")
+		}
+	}
 }
 
 
@@ -18,6 +56,7 @@ func NewClient(serverIp string, serverPort int) *Client {
 	client := &Client{
 		ServerIp: serverIp,
 		ServerPort: serverPort,
+		Param: 999,
 	}
 
 	conn, err := net.Dial("tcp", fmt.Sprintf("%s:%d", serverIp, serverPort))
@@ -45,7 +84,5 @@ func main() {
 	}
 	fmt.Println(">>>>>>>>>>CONNECT SERVER SUCCESS<<<<<<<<<<<")
 
-	select {
-
-	}
+	client.Run()
 }
