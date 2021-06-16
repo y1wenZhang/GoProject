@@ -7,10 +7,10 @@ import (
 )
 
 type User struct {
-	Name string
-	Addr string
-	C chan string
-	Conn net.Conn
+	Name   string
+	Addr   string
+	C      chan string
+	Conn   net.Conn
 	server *Server
 }
 
@@ -19,10 +19,10 @@ func NewUser(conn net.Conn, server *Server) *User {
 	userAddr := conn.RemoteAddr().String()
 
 	user := &User{
-		Name: userAddr,
-		Addr: userAddr,
-		C: make(chan string),
-		Conn: conn,
+		Name:   userAddr,
+		Addr:   userAddr,
+		C:      make(chan string),
+		Conn:   conn,
 		server: server,
 	}
 	// 启动监听
@@ -42,6 +42,11 @@ func (u *User) Online() {
 }
 
 func (u *User) Offline() {
+	// 用户下线
+	u.server.mapLock.Lock()
+	delete(u.server.OnlineMap, u.Name)
+	u.server.mapLock.Unlock()
+
 	u.server.BroadCast(u, "下线了")
 }
 
@@ -53,7 +58,7 @@ func (u *User) DoMessage(msg string) {
 
 	if msg == "who" {
 		// 查询当前在线用户
-		for _,user := range u.server.OnlineMap {
+		for _, user := range u.server.OnlineMap {
 			msg := fmt.Sprintf("%s==%s在线\n", user.Addr, user.Name)
 			u.SendMsg(msg)
 		}
@@ -71,7 +76,7 @@ func (u *User) DoMessage(msg string) {
 
 			u.Name = newName
 
-			u.SendMsg("用户名修改成功\n")
+			u.SendMsg("用户名修改成功, 用户名修改为：" + newName + "\n")
 		}
 	} else {
 		u.server.BroadCast(u, msg)
@@ -85,6 +90,3 @@ func (u *User) ListenMessage() {
 		u.Conn.Write([]byte(msg + "\n"))
 	}
 }
-
-
-

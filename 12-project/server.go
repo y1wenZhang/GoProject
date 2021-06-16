@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"runtime"
 	"sync"
+	"time"
 )
 
 type Server struct {
@@ -13,19 +15,18 @@ type Server struct {
 
 	// 在线用户列表
 	OnlineMap map[string]*User
-	mapLock sync.RWMutex
+	mapLock   sync.RWMutex
 
 	// 消息广播的channel
 	Message chan string
 }
 
-
 func NewServer(ip string, port int) *Server {
 	server := &Server{
-		Ip:   ip,
-		Port: port,
+		Ip:        ip,
+		Port:      port,
 		OnlineMap: make(map[string]*User),
-		Message: make(chan string),
+		Message:   make(chan string),
 	}
 	return server
 }
@@ -50,13 +51,14 @@ func (s *Server) BroadCast(user *User, msg string) {
 	s.Message <- sendMsg
 }
 
-
 // Handler 业务处理
 func (s *Server) Handler(conn net.Conn) {
 	fmt.Println("连接服务器成功")
 
 	user := NewUser(conn, s)
 	user.Online()
+
+	isAlive := make(chan bool)
 	// 接收用户消息，进行广播
 	go func() {
 		buf := make([]byte, 4096)
@@ -75,18 +77,38 @@ func (s *Server) Handler(conn net.Conn) {
 			// 提取用户消息
 			msg := string(buf[:n-1])
 			user.DoMessage(msg)
+
+			isAlive <- true
 		}
 	}()
 
 	// 当前handler阻塞
-	select {
+	for {
+		select {
+		case <-isAlive:
+			// 当前用户是活跃的，重置定时值
+			// 不做任何事情，为了激活select，更新下面的定时器
+		case <-time.After(10 * time.Second):  // 判断该条件是触发重置定时
+			// 已经超时
+			// 将当前User强制关闭
+			user.SendMsg("你被踢了")
 
+			// 销毁用户资源
+			close(user.C)
+
+			// 关闭连接
+			conn.Close()
+
+			// 退出当前Handler
+			runtime.Goexit()
+
+		}
 	}
 }
 
 func (s *Server) Start() {
 	// socket listen
-	listener, err := net.Listen("tcp4", fmt.Sprintf("%s:%d", s.Ip, s.Port))
+	listener, err := net.Listen("tcp", fmt.Sprintf("%s:%d", s.Ip, s.Port))
 	if err != nil {
 		fmt.Println("net listern error: ", err)
 	}
