@@ -3,7 +3,9 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io"
 	"net"
+	"os"
 )
 
 type Client struct {
@@ -34,6 +36,40 @@ func (client *Client) Menu() bool {
 }
 
 
+func (client *Client) UpdateName() bool {
+	fmt.Println(">>>>>>>请输入用户名：")
+	fmt.Scanln(&client.Name)
+
+	sendMsg := fmt.Sprintf("rename|%s", client.Name)
+
+	_, err := client.Conn.Write([]byte(sendMsg))
+	if err != nil {
+		fmt.Println("client conn write error:", err)
+		return false
+	}
+	return true
+}
+
+
+func (client *Client) DealResponse() {
+	for {
+		//buf := make([]byte, 4096)
+		//n, err := client.Conn.Read(buf)
+		//if n == 0 {
+		//	return
+		//}
+		//if err != nil && err != io.EOF {
+		//	fmt.Println("Conn Read err: ", err)
+		//	return
+		//}
+		//
+		//msg := string(buf[:n-1])
+		//fmt.Println(msg)
+		io.Copy(os.Stdout, client.Conn)
+	}
+}
+
+
 func (client *Client) Run() {
 	for client.Param != 0 {
 		for client.Menu() != true {
@@ -44,9 +80,7 @@ func (client *Client) Run() {
 		case 2:
 			fmt.Println(">>>>>>>>私聊模式<<<<<<")
 		case 3:
-			fmt.Println(">>>>>>>>更改用户名<<<<<<")
-		case 0:
-			fmt.Println(">>>>>>>>退出<<<<<<<<<")
+			client.UpdateName()
 		}
 	}
 }
@@ -79,6 +113,9 @@ func init() {
 func main() {
 	flag.Parse()
 	client := NewClient(serverIp, serverPort)
+
+	go client.DealResponse()
+
 	if client == nil {
 		fmt.Println(">>>>>>>>>CONNECT SERVER FAILED<<<<<<<<<<")
 	}
