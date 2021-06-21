@@ -2,8 +2,8 @@ package main
 
 import (
 	"fmt"
-	"studyProject/1-init/lib1"
-	"studyProject/1-init/lib2"
+	"studyProject/21DaysStudyGolang/1-init/lib1"
+	"studyProject/21DaysStudyGolang/1-init/lib2"
 )
 
 func main() {
